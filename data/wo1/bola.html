@@ -1,16 +1,20 @@
 <!DOCTYPE html>
-<html lang="id">
+<html translate="no">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>🏀 入球游戏 - Kosakata Mandarin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="google" content="notranslate" />
+    <title>🏀 Basket Vocab Game</title>
     <style>
         /* ===== RESET & BASE ===== */
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            user-select: none;
+            user-select: none !important;
+            -webkit-user-select: none !important;
+            -webkit-touch-callout: none !important;
+            -webkit-tap-highlight-color: transparent;
         }
         body {
             font-family: 'Segoe UI', 'Poppins', system-ui, sans-serif;
@@ -21,9 +25,10 @@
             align-items: center;
             padding: 20px;
             margin: 0;
+            overflow-x: hidden;
+            touch-action: pan-y; /* tetap izinkan scroll vertikal jika perlu */
         }
 
-        /* ===== GAME CONTAINER ===== */
         .game-container {
             max-width: 820px;
             width: 100%;
@@ -33,7 +38,8 @@
             padding: 30px 30px 40px;
             box-shadow: 0 30px 60px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.04);
-            transition: all 0.3s;
+            overflow: visible !important; /* biarkan bola terbang keluar */
+            position: relative;
         }
 
         /* ===== HEADER ===== */
@@ -101,10 +107,12 @@
             background: rgba(255, 255, 255, 0.08);
         }
 
-        /* ===== MEANING DISPLAY ===== */
+        /* ===== MEANING ===== */
         .meaning-area {
             text-align: center;
             padding: 12px 10px 18px;
+            position: relative;
+            z-index: 5;
         }
         .meaning-label {
             font-size: 15px;
@@ -132,7 +140,7 @@
             margin-top: 6px;
         }
 
-        /* ===== BASKETS ROW ===== */
+        /* ===== BASKETS ===== */
         .baskets-row {
             display: flex;
             justify-content: center;
@@ -141,9 +149,10 @@
             margin: 20px 0 30px;
             padding: 0 6px;
             flex-wrap: wrap;
+            position: relative;
+            z-index: 5;
         }
 
-        /* ===== SINGLE BASKET ===== */
         .basket {
             flex: 1 1 150px;
             max-width: 200px;
@@ -152,21 +161,18 @@
             flex-direction: column;
             align-items: center;
             cursor: pointer;
-            transition: transform 0.2s, filter 0.2s;
+            transition: transform 0.15s, filter 0.15s;
             position: relative;
+            touch-action: manipulation;
         }
         .basket:hover {
-            transform: translateY(-3px);
+            transform: translateY(-4px);
+            filter: brightness(1.1);
         }
         .basket:active {
-            transform: scale(0.96);
-        }
-        .basket.drag-over {
-            transform: scale(1.04);
-            filter: brightness(1.2);
+            transform: scale(0.94);
         }
 
-        /* Basket body */
         .basket-body {
             width: 100%;
             aspect-ratio: 1.2 / 1;
@@ -180,7 +186,6 @@
             border: 2px solid rgba(255, 200, 120, 0.15);
             transition: all 0.25s;
         }
-        /* Basket weave texture (subtle) */
         .basket-body::before {
             content: '';
             position: absolute;
@@ -198,7 +203,6 @@
                     rgba(0, 0, 0, 0.04) 7px);
             pointer-events: none;
         }
-        /* Basket rim */
         .basket-body::after {
             content: '';
             position: absolute;
@@ -212,7 +216,6 @@
             border: 1px solid rgba(255, 200, 140, 0.15);
         }
 
-        /* Hanzi on basket */
         .basket-hanzi {
             font-size: 34px;
             font-weight: 700;
@@ -229,7 +232,6 @@
             font-size: 26px;
         }
 
-        /* Basket label (A/B/C) */
         .basket-label {
             margin-top: 8px;
             font-size: 13px;
@@ -242,7 +244,7 @@
             border: 1px solid rgba(255, 255, 255, 0.04);
         }
 
-        /* Basket glow on correct/incorrect */
+        /* Glow */
         .basket.correct-glow .basket-body {
             box-shadow: 0 0 40px rgba(80, 255, 120, 0.6), 0 14px 24px rgba(0, 0, 0, 0.5);
             border-color: rgba(80, 255, 120, 0.5);
@@ -258,8 +260,10 @@
             justify-content: center;
             padding: 6px 0 10px;
             position: relative;
-            height: 110px;
+            height: 120px; /* sedikit lebih tinggi agar bola tidak terpotong saat start */
             touch-action: none;
+            overflow: visible !important; /* penting agar bola bisa terbang tinggi */
+            z-index: 20; /* di atas keranjang dan teks */
         }
         .ball {
             width: 76px;
@@ -267,12 +271,13 @@
             border-radius: 50%;
             background: radial-gradient(circle at 35% 30%, #ffa94d, #e07020 55%, #a04010);
             box-shadow: 0 10px 30px rgba(255, 120, 20, 0.4), inset 0 -8px 20px rgba(0, 0, 0, 0.4), inset 0 6px 20px rgba(255, 220, 140, 0.5);
-            cursor: grab;
-            transition: transform 0.15s, box-shadow 0.2s;
-            position: relative;
-            touch-action: none;
-            z-index: 10;
+            position: relative; /* default, diubah ke absolute saat terbang */
+            z-index: 30;
             border: 2px solid rgba(255, 200, 120, 0.2);
+            transition: none;
+            will-change: transform, left, top;
+            display: block;
+            touch-action: none;
         }
         .ball::after {
             content: '';
@@ -285,90 +290,29 @@
             border-radius: 50%;
             transform: rotate(-30deg);
         }
-        .ball:active {
-            cursor: grabbing;
-        }
-        .ball.dragging {
-            cursor: grabbing;
-            transform: scale(1.12);
-            box-shadow: 0 16px 48px rgba(255, 120, 20, 0.6);
-            z-index: 50;
-            transition: none;
-        }
-        .ball.dropped-correct {
-            animation: ballDropCorrect 0.55s ease forwards;
-        }
-        .ball.dropped-wrong {
-            animation: ballDropWrong 0.6s ease forwards;
-        }
-        .ball.hidden-ball {
-            opacity: 0;
+
+        .ball.flying {
             pointer-events: none;
-            transition: opacity 0.2s;
+            cursor: default;
+            touch-action: none;
         }
 
-        /* ===== BALL ANIMATIONS ===== */
-        @keyframes ballDropCorrect {
-            0% {
-                transform: scale(1.1);
-                opacity: 1;
-            }
-            40% {
-                transform: scale(0.8) translateY(40px);
-                opacity: 0.9;
-            }
-            100% {
-                transform: scale(0.3) translateY(90px);
-                opacity: 0;
-            }
+        .ball.entered {
+            animation: ballEnter 0.5s ease forwards;
         }
-        @keyframes ballDropWrong {
-            0% {
-                transform: translateX(0);
-                opacity: 1;
-            }
-            20% {
-                transform: translateX(-30px) rotate(-15deg);
-            }
-            40% {
-                transform: translateX(30px) rotate(15deg);
-            }
-            60% {
-                transform: translateX(-18px) rotate(-8deg);
-            }
-            80% {
-                transform: translateX(12px) rotate(5deg);
-            }
-            100% {
-                transform: translateX(0) rotate(0deg);
-                opacity: 1;
-            }
+        @keyframes ballEnter {
+            0% { transform: scale(0.8); opacity: 0.8; }
+            100% { transform: scale(0.2); opacity: 0; }
         }
 
-        /* ===== DRAG GHOST (clone) ===== */
-        .ball-ghost {
-            position: fixed;
-            width: 76px;
-            height: 76px;
-            border-radius: 50%;
-            background: radial-gradient(circle at 35% 30%, #ffa94d, #e07020 55%, #a04010);
-            box-shadow: 0 20px 50px rgba(255, 120, 20, 0.7);
-            pointer-events: none;
-            z-index: 999;
-            transform: translate(-50%, -50%) scale(1.08);
-            border: 2px solid rgba(255, 200, 120, 0.3);
-            display: none;
+        .ball.bounced {
+            animation: ballBounce 0.6s ease forwards;
         }
-        .ball-ghost::after {
-            content: '';
-            position: absolute;
-            top: 12%;
-            left: 22%;
-            width: 28%;
-            height: 18%;
-            background: radial-gradient(circle, rgba(255, 255, 255, 0.5) 0%, transparent 70%);
-            border-radius: 50%;
-            transform: rotate(-30deg);
+        @keyframes ballBounce {
+            0% { transform: scale(1); }
+            30% { transform: translateY(-20px) scale(1.1); }
+            60% { transform: translateY(10px) scale(0.9); }
+            100% { transform: translateY(0) scale(1); }
         }
 
         /* ===== FEEDBACK ===== */
@@ -383,6 +327,8 @@
             font-weight: 600;
             padding: 4px 0;
             transition: all 0.25s;
+            position: relative;
+            z-index: 10;
         }
         .feedback-area .fb-icon {
             font-size: 32px;
@@ -420,6 +366,9 @@
             box-shadow: 0 8px 24px rgba(255, 180, 60, 0.3);
             transition: transform 0.2s, box-shadow 0.2s;
             letter-spacing: 0.5px;
+            position: relative;
+            z-index: 10;
+            touch-action: manipulation;
         }
         .next-btn:hover {
             transform: scale(1.04);
@@ -437,6 +386,8 @@
             display: none;
             text-align: center;
             padding: 30px 10px 10px;
+            position: relative;
+            z-index: 10;
         }
         .game-over.show {
             display: block;
@@ -472,6 +423,7 @@
             cursor: pointer;
             box-shadow: 0 8px 24px rgba(80, 255, 120, 0.25);
             transition: transform 0.2s, box-shadow 0.2s;
+            touch-action: manipulation;
         }
         .restart-btn:hover {
             transform: scale(1.04);
@@ -525,7 +477,7 @@
                 height: 62px;
             }
             .ball-wrapper {
-                height: 90px;
+                height: 100px;
             }
             .feedback-area {
                 font-size: 18px;
@@ -540,10 +492,6 @@
             }
             .stat-divider {
                 display: none;
-            }
-            .ball-ghost {
-                width: 62px;
-                height: 62px;
             }
         }
         @media (max-width: 420px) {
@@ -568,11 +516,7 @@
                 height: 52px;
             }
             .ball-wrapper {
-                height: 76px;
-            }
-            .ball-ghost {
-                width: 52px;
-                height: 52px;
+                height: 90px;
             }
         }
     </style>
@@ -584,7 +528,7 @@
         <div class="header">
             <div class="title">
                 <span class="ball-icon">🏀</span>
-                <h1>入球游戏-by lcnpalembang</h1>
+                <h1>Basket Vocab</h1>
             </div>
             <div class="stats">
                 <div class="stat-item">
@@ -603,7 +547,7 @@
                 <span class="stat-divider"></span>
                 <div class="stat-item">
                     <span class="icon">📌</span>
-                    <span class="value" id="questionCounter">1/20</span>
+                    <span class="value" id="questionCounter">1/30</span>
                 </div>
             </div>
         </div>
@@ -612,26 +556,23 @@
         <div class="meaning-area">
             <div class="meaning-label">🇮🇩 Arti</div>
             <div class="meaning-text" id="meaningDisplay">—</div>
-            <div class="question-counter" id="progressHint">Pilih keranjang yang benar</div>
+            <div class="question-counter" id="progressHint">Klik keranjang untuk melempar</div>
         </div>
 
         <!-- BASKETS -->
         <div class="baskets-row" id="basketsRow">
-            <!-- Basket A -->
             <div class="basket" data-index="0" id="basket0">
                 <div class="basket-body">
                     <span class="basket-hanzi" id="hanzi0">—</span>
                 </div>
                 <span class="basket-label">A</span>
             </div>
-            <!-- Basket B -->
             <div class="basket" data-index="1" id="basket1">
                 <div class="basket-body">
                     <span class="basket-hanzi" id="hanzi1">—</span>
                 </div>
                 <span class="basket-label">B</span>
             </div>
-            <!-- Basket C -->
             <div class="basket" data-index="2" id="basket2">
                 <div class="basket-body">
                     <span class="basket-hanzi" id="hanzi2">—</span>
@@ -648,7 +589,7 @@
         <!-- FEEDBACK -->
         <div class="feedback-area" id="feedbackArea">
             <span class="fb-icon" id="fbIcon">💡</span>
-            <span class="fb-text" id="fbText">Seret bola ke keranjang!</span>
+            <span class="fb-text" id="fbText">Klik keranjang pilihanmu!</span>
         </div>
 
         <!-- NEXT BUTTON -->
@@ -664,36 +605,168 @@
         </div>
     </div>
 
-    <!-- Drag Ghost -->
-    <div class="ball-ghost" id="ballGhost"></div>
-
     <script>
         // ============================================================
-        //  SOUND ENGINE (Web Audio API)
+        //  MASTER VOCABULARY (gabungan 01–05)
+        // ============================================================
+        const MASTER_VOCAB = [
+            { hanzi: '爷爷', meaning: 'kakek (dari ayah)' },
+            { hanzi: '奶奶', meaning: 'nenek (dari ayah)' },
+            { hanzi: '礼物', meaning: 'hadiah' },
+            { hanzi: '奶茶', meaning: 'teh susu / bubble tea' },
+            { hanzi: '酒店', meaning: 'hotel' },
+            { hanzi: '商店', meaning: 'toko' },
+            { hanzi: '奶茶店', meaning: 'toko bubble tea' },
+            { hanzi: '公交车', meaning: 'bus' },
+            { hanzi: '火车站', meaning: 'stasiun kereta' },
+            { hanzi: '公交站', meaning: 'halte bus' },
+            { hanzi: '水果', meaning: 'buah-buahan' },
+            { hanzi: '苹果', meaning: 'apel' },
+            { hanzi: '书', meaning: 'buku' },
+            { hanzi: '孩子', meaning: 'anak' },
+            { hanzi: '朋友', meaning: 'teman' },
+            { hanzi: '门口', meaning: 'pintu masuk' },
+            { hanzi: '下面', meaning: 'di bawah' },
+            { hanzi: '里面', meaning: 'di dalam' },
+            { hanzi: '外面', meaning: 'di luar' },
+            { hanzi: '手', meaning: 'tangan' },
+            { hanzi: '电脑', meaning: 'komputer' },
+            { hanzi: '进来', meaning: 'masuk (mendekati pembicara)' },
+            { hanzi: '进去', meaning: 'masuk (menjauhi pembicara)' },
+            { hanzi: '出来', meaning: 'keluar (mendekati pembicara)' },
+            { hanzi: '出去', meaning: 'keluar (menjauhi pembicara)' },
+            { hanzi: '上来', meaning: 'naik (mendekati pembicara)' },
+            { hanzi: '上去', meaning: 'naik (menjauhi pembicara)' },
+            { hanzi: '下来', meaning: 'turun (mendekati pembicara)' },
+            { hanzi: '下去', meaning: 'turun (menjauhi pembicara)' },
+            { hanzi: '回来', meaning: 'kembali (mendekati pembicara)' },
+            { hanzi: '回去', meaning: 'kembali (menjauhi pembicara)' },
+            { hanzi: '过来', meaning: 'datang ke sini (mendekati)' },
+            { hanzi: '过去', meaning: 'pergi ke sana (menjauhi)' },
+            { hanzi: '起来', meaning: 'bangun / berdiri' },
+            { hanzi: '准备', meaning: 'mempersiapkan' },
+            { hanzi: '介绍', meaning: 'memperkenalkan' },
+            { hanzi: '拿来', meaning: 'mengambil dan membawa ke sini' },
+            { hanzi: '送去', meaning: 'mengirim ke sana' },
+            { hanzi: '买回', meaning: 'membeli dan membawa kembali' },
+            { hanzi: '拿出', meaning: 'mengeluarkan (dari dalam)' },
+            { hanzi: '走', meaning: 'berjalan / pergi' },
+            { hanzi: '等', meaning: 'menunggu' },
+            { hanzi: '接', meaning: 'menjemput / menerima' },
+            { hanzi: '送', meaning: 'mengantar / memberi' },
+            { hanzi: '叫', meaning: 'memanggil / menyebut' },
+            { hanzi: '开', meaning: 'membuka / mengemudi' },
+            { hanzi: '找', meaning: 'mencari' },
+            { hanzi: '起床', meaning: 'bangun tidur' },
+            { hanzi: '睡觉', meaning: 'tidur' },
+            { hanzi: '吃饭', meaning: 'makan' },
+            { hanzi: '喝', meaning: 'minum' },
+            { hanzi: '做菜', meaning: 'memasak' },
+            { hanzi: '洗', meaning: 'mencuci' },
+            { hanzi: '玩', meaning: 'bermain' },
+            { hanzi: '打电话', meaning: 'menelepon' },
+            { hanzi: '客气', meaning: 'sopan / terlalu baik' },
+            { hanzi: '不好意思', meaning: 'malu / sungkan / maaf' },
+            { hanzi: '漂亮', meaning: 'cantik / bagus' },
+            { hanzi: '好吃', meaning: 'enak (makanan)' },
+            { hanzi: '好喝', meaning: 'enak (minuman)' },
+            { hanzi: '多', meaning: 'banyak' },
+            { hanzi: '少', meaning: 'sedikit' },
+            { hanzi: '快', meaning: 'cepat' },
+            { hanzi: '慢', meaning: 'lambat' },
+            { hanzi: '冷', meaning: 'dingin' },
+            { hanzi: '热', meaning: 'panas' },
+            { hanzi: '都', meaning: 'sudah / sampai (penekanan)' },
+            { hanzi: '就', meaning: 'maka / segera' },
+            { hanzi: '还', meaning: 'masih / bahkan / juga' },
+            { hanzi: '也', meaning: 'juga' },
+            { hanzi: '很', meaning: 'sangat' },
+            { hanzi: '太', meaning: 'terlalu' },
+            { hanzi: '这么', meaning: 'begini / begitu' },
+            { hanzi: '那么', meaning: 'begitu' },
+            { hanzi: '真', meaning: 'sungguh' },
+            { hanzi: '已经', meaning: 'sudah' },
+            { hanzi: '马上', meaning: 'segera' },
+            { hanzi: '别', meaning: 'jangan' },
+            { hanzi: '跟', meaning: 'dengan / bersama' },
+            { hanzi: '给', meaning: 'kepada / untuk' },
+            { hanzi: '在', meaning: 'di / sedang' },
+            { hanzi: '从', meaning: 'dari' },
+            { hanzi: '到', meaning: 'sampai / ke' },
+            { hanzi: '和', meaning: 'dan' },
+            { hanzi: '什么', meaning: 'apa' },
+            { hanzi: '哪儿', meaning: 'di mana' },
+            { hanzi: '哪里', meaning: 'di mana' },
+            { hanzi: '谁', meaning: 'siapa' },
+            { hanzi: '怎么', meaning: 'bagaimana (cara)' },
+            { hanzi: '怎么样', meaning: 'bagaimana (keadaan)' },
+            { hanzi: '多少', meaning: 'berapa (jumlah)' },
+            { hanzi: '几', meaning: 'berapa (angka kecil)' },
+            { hanzi: '让', meaning: 'membiarkan / menyuruh' },
+            { hanzi: '次', meaning: 'kali (penanda jumlah)' },
+            { hanzi: '旅游', meaning: 'berwisata' },
+            { hanzi: '帮忙', meaning: 'membantu' },
+            { hanzi: '那', meaning: 'itu / maka' },
+            { hanzi: '有时', meaning: 'kadang-kadang' },
+            { hanzi: '懂', meaning: 'mengerti' },
+            { hanzi: '意思', meaning: 'arti / maksud' },
+            { hanzi: '北京', meaning: 'Beijing' },
+            { hanzi: '烤鸭', meaning: 'bebek panggang' },
+            { hanzi: '但', meaning: 'tetapi' },
+            { hanzi: '车站', meaning: 'stasiun / halte' },
+            { hanzi: '远', meaning: 'jauh' },
+            { hanzi: '打车', meaning: 'naik taksi' },
+            { hanzi: '还是', meaning: 'atau' },
+            { hanzi: '大学', meaning: 'universitas' },
+            { hanzi: '万', meaning: 'sepuluh ribu' },
+            { hanzi: '名', meaning: 'nama / ukuran untuk orang' },
+            { hanzi: '网上', meaning: 'online' },
+            { hanzi: '外国', meaning: 'luar negeri' },
+            { hanzi: '间', meaning: 'ruang / ukuran ruangan' },
+            { hanzi: '教室', meaning: 'ruang kelas' },
+            { hanzi: '票', meaning: 'tiket' },
+            { hanzi: '完', meaning: 'selesai' },
+            { hanzi: '一起', meaning: 'bersama-sama' },
+            { hanzi: '自己', meaning: 'sendiri' },
+            { hanzi: '拿', meaning: 'mengambil' },
+            { hanzi: '为什么', meaning: 'mengapa' },
+            { hanzi: '不错', meaning: 'tidak buruk / bagus' },
+            { hanzi: '每', meaning: 'setiap' },
+            { hanzi: '累', meaning: 'lelah' },
+            { hanzi: '过', meaning: 'pernah / melewati' },
+            { hanzi: '商场', meaning: 'mal / pusat perbelanjaan' },
+            { hanzi: '条', meaning: 'sebuah (untuk benda panjang)' },
+            { hanzi: '裤子', meaning: 'celana' },
+            { hanzi: '白色', meaning: 'putih' },
+            { hanzi: '因为', meaning: 'karena' },
+            { hanzi: '试', meaning: 'mencoba' },
+            { hanzi: '红色', meaning: 'merah' },
+            { hanzi: '所以', meaning: 'jadi / oleh karena itu' },
+            { hanzi: '书包', meaning: 'tas sekolah' },
+            { hanzi: '绿色', meaning: 'hijau' },
+            { hanzi: '黑色', meaning: 'hitam' },
+            { hanzi: '更', meaning: 'lebih' },
+            { hanzi: '颜色', meaning: 'warna' },
+            { hanzi: '一会儿', meaning: 'sebentar' }
+        ];
+
+        // ============================================================
+        //  SOUND ENGINE (Web Audio)
         // ============================================================
         class SoundEngine {
-            constructor() {
-                this.ctx = null;
-                this.ready = false;
-            }
-
+            constructor() { this.ctx = null; this.ready = false; }
             init() {
                 try {
                     this.ctx = new(window.AudioContext || window.webkitAudioContext)();
                     this.ready = true;
-                } catch (_) {
-                    this.ready = false;
-                }
+                } catch (_) { this.ready = false; }
             }
-
-            // ———— APPLAUSE ————
             playApplause() {
                 if (!this.ready) return;
                 try {
-                    const ctx = this.ctx;
-                    const now = ctx.currentTime;
-                    const count = 18;
-                    for (let i = 0; i < count; i++) {
+                    const ctx = this.ctx,
+                        now = ctx.currentTime;
+                    for (let i = 0; i < 18; i++) {
                         const osc = ctx.createOscillator();
                         const gain = ctx.createGain();
                         osc.connect(gain);
@@ -706,7 +779,6 @@
                         gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
                         osc.start(t);
                         osc.stop(t + dur + 0.01);
-                        // Add a second layer for richness
                         if (i % 2 === 0) {
                             const osc2 = ctx.createOscillator();
                             const gain2 = ctx.createGain();
@@ -719,7 +791,6 @@
                             osc2.stop(t + dur + 0.02);
                         }
                     }
-                    // Cheer layer
                     setTimeout(() => {
                         try {
                             for (let i = 0; i < 6; i++) {
@@ -738,14 +809,11 @@
                     }, 200);
                 } catch (_) {}
             }
-
-            // ———— MOCKING / WRONG ————
             playMocking() {
                 if (!this.ready) return;
                 try {
-                    const ctx = this.ctx;
-                    const now = ctx.currentTime;
-                    // Descending "wah wah" using oscillator with vibrato
+                    const ctx = this.ctx,
+                        now = ctx.currentTime;
                     const notes = [600, 500, 420, 350, 300, 250];
                     notes.forEach((freq, i) => {
                         const osc = ctx.createOscillator();
@@ -759,11 +827,9 @@
                         gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
                         osc.start(t);
                         osc.stop(t + 0.16);
-                        // Add a bit of pitch bend
                         osc.frequency.setValueAtTime(freq, t);
                         osc.frequency.exponentialRampToValueAtTime(freq * 0.7, t + 0.12);
                     });
-                    // Add a "buzzer" effect
                     const oscB = ctx.createOscillator();
                     const gainB = ctx.createGain();
                     oscB.connect(gainB);
@@ -774,7 +840,6 @@
                     gainB.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
                     oscB.start(now + 0.05);
                     oscB.stop(now + 0.46);
-                    // Second layer
                     const oscB2 = ctx.createOscillator();
                     const gainB2 = ctx.createGain();
                     oscB2.connect(gainB2);
@@ -790,121 +855,26 @@
         }
 
         // ============================================================
-        //  QUESTION BANK (20 questions)
-        // ============================================================
-        const QUESTIONS = [{
-            meaning: 'masuk (mendekati pembicara)',
-            correct: '进来',
-            distractors: ['进去', '出来']
-        }, {
-            meaning: 'naik (menjauhi pembicara)',
-            correct: '上去',
-            distractors: ['上来', '下去']
-        }, {
-            meaning: 'membeli',
-            correct: '买',
-            distractors: ['卖', '找']
-        }, {
-            meaning: 'membuka / mengemudi',
-            correct: '开',
-            distractors: ['关', '找']
-        }, {
-            meaning: 'banyak',
-            correct: '多',
-            distractors: ['少', '好']
-        }, {
-            meaning: 'cepat',
-            correct: '快',
-            distractors: ['慢', '冷']
-        }, {
-            meaning: 'minum',
-            correct: '喝',
-            distractors: ['吃', '洗']
-        }, {
-            meaning: 'kembali (mendekati pembicara)',
-            correct: '回来',
-            distractors: ['回去', '过来']
-        }, {
-            meaning: 'turun (mendekati pembicara)',
-            correct: '下来',
-            distractors: ['下去', '上来']
-        }, {
-            meaning: 'keluar (menjauhi pembicara)',
-            correct: '出去',
-            distractors: ['出来', '进去']
-        }, {
-            meaning: 'sopan / terlalu baik',
-            correct: '客气',
-            distractors: ['不好意思', '漂亮']
-        }, {
-            meaning: 'mencari',
-            correct: '找',
-            distractors: ['我', '接']
-        }, {
-            meaning: 'sedikit',
-            correct: '少',
-            distractors: ['多', '快']
-        }, {
-            meaning: 'panas',
-            correct: '热',
-            distractors: ['冷', '多']
-        }, {
-            meaning: 'makan',
-            correct: '吃饭',
-            distractors: ['做菜', '睡觉']
-        }, {
-            meaning: 'menunggu',
-            correct: '等',
-            distractors: ['接', '送']
-        }, {
-            meaning: 'kepada / untuk',
-            correct: '给',
-            distractors: ['跟', '在']
-        }, {
-            meaning: 'di / sedang',
-            correct: '在',
-            distractors: ['从', '到']
-        }, {
-            meaning: 'sudah',
-            correct: '已经',
-            distractors: ['马上', '还']
-        }, {
-            meaning: 'jangan',
-            correct: '别',
-            distractors: ['都', '也']
-        }];
-
-        // ============================================================
         //  GAME STATE
         // ============================================================
+        const NUM_QUESTIONS = 30;
         let state = {
             questions: [],
             currentIndex: 0,
             score: 0,
             correctCount: 0,
             wrongCount: 0,
-            totalQuestions: 0,
+            totalQuestions: NUM_QUESTIONS,
             isAnimating: false,
-            isDragging: false,
             answered: false,
             gameOver: false,
         };
 
-        // DOM refs
         const $ = id => document.getElementById(id);
         const ball = $('ball');
-        const ballGhost = $('ballGhost');
         const ballWrapper = $('ballWrapper');
-        const baskets = [
-            $('basket0'),
-            $('basket1'),
-            $('basket2')
-        ];
-        const hanziEls = [
-            $('hanzi0'),
-            $('hanzi1'),
-            $('hanzi2')
-        ];
+        const baskets = [$('basket0'), $('basket1'), $('basket2')];
+        const hanziEls = [$('hanzi0'), $('hanzi1'), $('hanzi2')];
         const meaningDisplay = $('meaningDisplay');
         const scoreDisplay = $('scoreDisplay');
         const correctCountEl = $('correctCount');
@@ -933,17 +903,41 @@
             return arr;
         }
 
-        function buildShuffledQuestions() {
-            const qs = QUESTIONS.map(q => ({
-                meaning: q.meaning,
-                correct: q.correct,
-                options: shuffle([q.correct, ...q.distractors])
-            }));
-            return shuffle(qs);
+        function pickRandom(arr, n) {
+            const copy = [...arr];
+            shuffle(copy);
+            return copy.slice(0, n);
+        }
+
+        function buildQuestions() {
+            const selected = pickRandom(MASTER_VOCAB, NUM_QUESTIONS);
+            return selected.map(item => {
+                let distractors = [];
+                const pool = MASTER_VOCAB.filter(v => v.hanzi !== item.hanzi);
+                const shuffledPool = shuffle(pool);
+                for (let i = 0; i < shuffledPool.length && distractors.length < 2; i++) {
+                    if (!distractors.some(d => d.hanzi === shuffledPool[i].hanzi)) {
+                        distractors.push(shuffledPool[i]);
+                    }
+                }
+                while (distractors.length < 2) {
+                    distractors.push({ hanzi: '???', meaning: 'dummy' });
+                }
+                const options = shuffle([
+                    { hanzi: item.hanzi, correct: true },
+                    { hanzi: distractors[0].hanzi, correct: false },
+                    { hanzi: distractors[1].hanzi, correct: false }
+                ]);
+                return {
+                    meaning: item.meaning,
+                    correct: item.hanzi,
+                    options: options.map(o => o.hanzi)
+                };
+            });
         }
 
         // ============================================================
-        //  RENDER QUESTION
+        //  RENDER QUESTION (reset bola sepenuhnya)
         // ============================================================
         function renderQuestion() {
             if (state.gameOver) return;
@@ -953,40 +947,43 @@
             meaningDisplay.textContent = q.meaning;
             for (let i = 0; i < 3; i++) {
                 hanziEls[i].textContent = q.options[i];
-                // adjust font size for long hanzi
                 hanziEls[i].classList.toggle('small', q.options[i].length > 2);
                 baskets[i].className = 'basket';
                 baskets[i].dataset.correct = q.options[i] === q.correct ? 'true' : 'false';
             }
 
-            // Reset ball
+            // === RESET BOLA SEPENUHNYA ===
             ball.className = 'ball';
-            ball.style.display = 'block';
+            ball.style.position = 'relative';
+            ball.style.left = '';
+            ball.style.top = '';
             ball.style.transform = '';
             ball.style.opacity = '1';
+            ball.style.display = 'block';
             ball.style.pointerEvents = 'auto';
+            ball.style.width = '';
+            ball.style.height = '';
+            ball.style.margin = '';
+            if (ball.parentNode !== ballWrapper) {
+                ballWrapper.appendChild(ball);
+            }
+            ball.classList.remove('entered', 'bounced', 'flying');
 
-            // Reset feedback
             fbIcon.textContent = '💡';
-            fbText.textContent = 'Seret bola ke keranjang!';
+            fbText.textContent = 'Klik keranjang untuk melempar!';
             fbText.className = 'fb-text';
-            feedbackArea.querySelector('.fb-score')?.remove();
+            feedbackArea.querySelectorAll('.fb-score').forEach(el => el.remove());
 
-            // Hide next button
             nextBtn.classList.remove('show');
             nextBtn.style.display = 'none';
 
             state.answered = false;
             state.isAnimating = false;
 
-            // Update counter
             questionCounter.textContent = `${state.currentIndex + 1}/${state.totalQuestions}`;
             progressHint.textContent = 'Pilih keranjang yang benar';
         }
 
-        // ============================================================
-        //  UPDATE STATS
-        // ============================================================
         function updateStats() {
             scoreDisplay.textContent = state.score;
             correctCountEl.textContent = state.correctCount;
@@ -994,74 +991,114 @@
         }
 
         // ============================================================
-        //  HANDLE ANSWER
+        //  THROW BALL (parabola tinggi)
         // ============================================================
-        function handleAnswer(basketEl) {
+        function throwBall(basketEl, isCorrect) {
             if (state.isAnimating || state.answered || state.gameOver) return;
-            const isCorrect = basketEl.dataset.correct === 'true';
 
             state.answered = true;
             state.isAnimating = true;
 
-            // Disable ball
-            ball.style.pointerEvents = 'none';
+            const ballRect = ball.getBoundingClientRect();
+            const basketRect = basketEl.querySelector('.basket-body').getBoundingClientRect();
+            const wrapperRect = ballWrapper.getBoundingClientRect();
 
-            // Find the correct basket for visual feedback
+            const startX = ballRect.left - wrapperRect.left + ballRect.width / 2;
+            const startY = ballRect.top - wrapperRect.top + ballRect.height / 2;
+            const endX = basketRect.left - wrapperRect.left + basketRect.width / 2;
+            const endY = basketRect.top - wrapperRect.top + basketRect.height / 2;
+
+            // Ubah bola menjadi absolute
+            ball.style.position = 'absolute';
+            ball.style.left = (startX - 38) + 'px';
+            ball.style.top = (startY - 38) + 'px';
+            ball.style.width = '76px';
+            ball.style.height = '76px';
+            ball.style.margin = '0';
+            ball.style.transform = 'scale(1)';
+            ball.style.transition = 'none';
+            void ball.offsetHeight;
+
+            const duration = 550; // sedikit lebih lambat agar terlihat dramatis
+            const startTime = performance.now();
+            const startLeft = parseFloat(ball.style.left);
+            const startTop = parseFloat(ball.style.top);
+            const deltaX = endX - 38 - startLeft;
+            const deltaY = endY - 38 - startTop;
+            // TINGGI LAMBUNGAN: -280px agar melambung sangat tinggi dan masuk dari atas
+            const peak = -280;
+
+            ball.classList.add('flying');
+
+            function animateThrow(time) {
+                const elapsed = time - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                // easeOutCubic untuk pendaratan yang halus
+                const ease = 1 - Math.pow(1 - progress, 3);
+                const x = startLeft + deltaX * ease;
+                const y = startTop + deltaY * ease + peak * 4 * progress * (1 - progress);
+                ball.style.left = x + 'px';
+                ball.style.top = y + 'px';
+
+                if (progress < 1) {
+                    requestAnimationFrame(animateThrow);
+                } else {
+                    ball.style.left = (endX - 38) + 'px';
+                    ball.style.top = (endY - 38) + 'px';
+                    afterThrow(basketEl, isCorrect);
+                }
+            }
+            requestAnimationFrame(animateThrow);
+        }
+
+        function afterThrow(basketEl, isCorrect) {
             const correctBasket = baskets.find(b => b.dataset.correct === 'true');
 
             if (isCorrect) {
-                // ———— CORRECT ————
+                ball.classList.remove('flying');
+                ball.classList.add('entered');
+                setTimeout(() => {
+                    ball.style.display = 'none';
+                }, 500);
+
                 state.score += 2;
                 state.correctCount++;
                 basketEl.classList.add('correct-glow');
 
-                // Ball drops into basket
-                ball.classList.add('dropped-correct');
-                setTimeout(() => {
-                    ball.style.display = 'none';
-                }, 550);
-
-                // Feedback
                 fbIcon.textContent = '🎉';
                 fbText.textContent = 'Benar! +2 poin';
                 fbText.className = 'fb-text correct';
-
-                // Sound: applause
                 sound.playApplause();
-
-                // Show score bump
                 const bump = document.createElement('span');
                 bump.className = 'fb-score';
                 bump.textContent = '+2';
                 feedbackArea.appendChild(bump);
 
             } else {
-                // ———— WRONG ————
+                ball.classList.remove('flying');
+                ball.classList.add('bounced');
+                setTimeout(() => {
+                    ball.classList.remove('bounced');
+                    ball.style.position = 'relative';
+                    ball.style.left = '';
+                    ball.style.top = '';
+                    ball.style.transform = '';
+                    ball.style.opacity = '1';
+                    ball.style.display = 'block';
+                    ballWrapper.appendChild(ball);
+                }, 600);
+
                 state.score -= 3;
                 state.wrongCount++;
                 basketEl.classList.add('wrong-glow');
-
-                // Ball bounces back
-                ball.classList.add('dropped-wrong');
-                setTimeout(() => {
-                    ball.classList.remove('dropped-wrong');
-                    ball.style.transform = '';
-                }, 620);
-
-                // Also highlight the correct basket
                 if (correctBasket) {
                     correctBasket.classList.add('correct-glow');
                 }
 
-                // Feedback
                 fbIcon.textContent = '😅';
                 fbText.textContent = `Salah! -3 poin · Jawaban: ${correctBasket?.querySelector('.basket-hanzi')?.textContent || '?'}`;
                 fbText.className = 'fb-text wrong';
-
-                // Sound: mocking
                 sound.playMocking();
-
-                // Show score bump
                 const bump = document.createElement('span');
                 bump.className = 'fb-score';
                 bump.textContent = '-3';
@@ -1071,7 +1108,6 @@
 
             updateStats();
 
-            // Show next button after delay
             setTimeout(() => {
                 state.isAnimating = false;
                 if (!state.gameOver) {
@@ -1087,23 +1123,28 @@
         }
 
         // ============================================================
-        //  NEXT QUESTION / GAME OVER
+        //  HANDLE BASKET CLICK
+        // ============================================================
+        function onBasketClick(e) {
+            const basketEl = e.currentTarget;
+            if (state.isAnimating || state.answered || state.gameOver) return;
+            const isCorrect = basketEl.dataset.correct === 'true';
+            throwBall(basketEl, isCorrect);
+        }
+
+        // ============================================================
+        //  NEXT / GAME OVER
         // ============================================================
         function goToNext() {
             if (state.isAnimating) return;
             if (state.gameOver) return;
-
             if (state.currentIndex >= state.totalQuestions - 1) {
-                // Game Over
                 endGame();
                 return;
             }
-
             state.currentIndex++;
             renderQuestion();
-            // Reset basket glows
             baskets.forEach(b => b.className = 'basket');
-            // Remove any extra fb-score
             feedbackArea.querySelectorAll('.fb-score').forEach(el => el.remove());
         }
 
@@ -1112,7 +1153,6 @@
             gameOverEl.classList.add('show');
             finalScore.textContent = `Skor Akhir: ${state.score}`;
             finalDetail.textContent = `✅ ${state.correctCount} benar · ❌ ${state.wrongCount} salah`;
-            // Hide game elements
             document.querySelector('.meaning-area').style.opacity = '0.4';
             document.querySelector('.baskets-row').style.opacity = '0.4';
             ball.style.display = 'none';
@@ -1123,11 +1163,8 @@
             fbText.className = 'fb-text';
         }
 
-        // ============================================================
-        //  RESTART
-        // ============================================================
         function restartGame() {
-            state.questions = buildShuffledQuestions();
+            state.questions = buildQuestions();
             state.currentIndex = 0;
             state.score = 0;
             state.correctCount = 0;
@@ -1142,7 +1179,13 @@
             document.querySelector('.baskets-row').style.opacity = '1';
             ball.style.display = 'block';
             ball.className = 'ball';
+            ball.style.position = 'relative';
+            ball.style.left = '';
+            ball.style.top = '';
+            ball.style.transform = '';
+            ball.style.opacity = '1';
             ball.style.pointerEvents = 'auto';
+            ballWrapper.appendChild(ball);
             nextBtn.style.display = 'none';
             nextBtn.classList.remove('show');
             nextBtn.textContent = '▶ Lanjut';
@@ -1151,181 +1194,21 @@
 
             updateStats();
             renderQuestion();
-            // Re-init sound context on user interaction
-            if (!sound.ready) {
-                sound.init();
-            }
-        }
-
-        // ============================================================
-        //  DRAG & DROP (Mouse + Touch)
-        // ============================================================
-        let dragData = {
-            active: false,
-            startX: 0,
-            startY: 0,
-            offsetX: 0,
-            offsetY: 0,
-            ghostVisible: false,
-        };
-
-        function getBallCenter() {
-            const rect = ball.getBoundingClientRect();
-            return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-        }
-
-        function getBasketCenter(el) {
-            const rect = el.getBoundingClientRect();
-            return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-        }
-
-        function isOverBasket(basketEl, clientX, clientY) {
-            const rect = basketEl.getBoundingClientRect();
-            // Use a slightly smaller hit area for better feel
-            const pad = 12;
-            return clientX >= rect.left + pad &&
-                clientX <= rect.right - pad &&
-                clientY >= rect.top + pad &&
-                clientY <= rect.bottom - pad;
-        }
-
-        function getBasketAt(clientX, clientY) {
-            for (const b of baskets) {
-                if (isOverBasket(b, clientX, clientY)) {
-                    return b;
-                }
-            }
-            return null;
-        }
-
-        // ———— MOUSE ————
-        function onMouseDown(e) {
-            if (state.isAnimating || state.answered || state.gameOver) return;
-            if (e.button !== 0) return;
-            e.preventDefault();
-            const rect = ball.getBoundingClientRect();
-            dragData.offsetX = e.clientX - rect.left;
-            dragData.offsetY = e.clientY - rect.top;
-            dragData.active = true;
-            dragData.ghostVisible = true;
-
-            ball.classList.add('dragging');
-            ballGhost.style.display = 'block';
-            ballGhost.style.left = e.clientX + 'px';
-            ballGhost.style.top = e.clientY + 'px';
-            ball.style.opacity = '0.4';
-
-            document.addEventListener('mousemove', onMouseMove);
-            document.addEventListener('mouseup', onMouseUp);
-        }
-
-        function onMouseMove(e) {
-            if (!dragData.active) return;
-            e.preventDefault();
-            ballGhost.style.left = e.clientX + 'px';
-            ballGhost.style.top = e.clientY + 'px';
-
-            // Highlight basket on hover
-            const over = getBasketAt(e.clientX, e.clientY);
-            baskets.forEach(b => b.classList.remove('drag-over'));
-            if (over) over.classList.add('drag-over');
-        }
-
-        function onMouseUp(e) {
-            if (!dragData.active) return;
-            dragData.active = false;
-            dragData.ghostVisible = false;
-            ball.classList.remove('dragging');
-            ballGhost.style.display = 'none';
-            ball.style.opacity = '1';
-
-            baskets.forEach(b => b.classList.remove('drag-over'));
-
-            const over = getBasketAt(e.clientX, e.clientY);
-            if (over && !state.isAnimating && !state.answered) {
-                handleAnswer(over);
-            } else {
-                // Snap ball back
-                ball.style.transform = '';
-            }
-
-            document.removeEventListener('mousemove', onMouseMove);
-            document.removeEventListener('mouseup', onMouseUp);
-        }
-
-        // ———— TOUCH ————
-        function onTouchStart(e) {
-            if (state.isAnimating || state.answered || state.gameOver) return;
-            const touch = e.touches[0];
-            if (!touch) return;
-            e.preventDefault();
-
-            const rect = ball.getBoundingClientRect();
-            dragData.offsetX = touch.clientX - rect.left;
-            dragData.offsetY = touch.clientY - rect.top;
-            dragData.active = true;
-            dragData.ghostVisible = true;
-
-            ball.classList.add('dragging');
-            ballGhost.style.display = 'block';
-            ballGhost.style.left = touch.clientX + 'px';
-            ballGhost.style.top = touch.clientY + 'px';
-            ball.style.opacity = '0.4';
-
-            document.addEventListener('touchmove', onTouchMove, { passive: false });
-            document.addEventListener('touchend', onTouchEnd, { passive: false });
-        }
-
-        function onTouchMove(e) {
-            if (!dragData.active) return;
-            e.preventDefault();
-            const touch = e.touches[0];
-            if (!touch) return;
-            ballGhost.style.left = touch.clientX + 'px';
-            ballGhost.style.top = touch.clientY + 'px';
-
-            const over = getBasketAt(touch.clientX, touch.clientY);
-            baskets.forEach(b => b.classList.remove('drag-over'));
-            if (over) over.classList.add('drag-over');
-        }
-
-        function onTouchEnd(e) {
-            if (!dragData.active) return;
-            dragData.active = false;
-            dragData.ghostVisible = false;
-            ball.classList.remove('dragging');
-            ballGhost.style.display = 'none';
-            ball.style.opacity = '1';
-
-            baskets.forEach(b => b.classList.remove('drag-over'));
-
-            const touch = e.changedTouches[0];
-            if (touch) {
-                const over = getBasketAt(touch.clientX, touch.clientY);
-                if (over && !state.isAnimating && !state.answered) {
-                    handleAnswer(over);
-                } else {
-                    ball.style.transform = '';
-                }
-            }
-
-            document.removeEventListener('touchmove', onTouchMove);
-            document.removeEventListener('touchend', onTouchEnd);
+            if (!sound.ready) sound.init();
         }
 
         // ============================================================
         //  INIT
         // ============================================================
         function init() {
-            // Sound init on first user interaction
-            document.addEventListener('click', () => {
-                if (!sound.ready) sound.init();
-            }, { once: true });
-            document.addEventListener('touchstart', () => {
-                if (!sound.ready) sound.init();
-            }, { once: true });
+            // Matikan klik kanan di seluruh halaman
+            document.addEventListener('contextmenu', (e) => e.preventDefault());
 
-            state.questions = buildShuffledQuestions();
+            // Inisialisasi sound
+            document.addEventListener('click', () => { if (!sound.ready) sound.init(); }, { once: true });
+            document.addEventListener('touchstart', () => { if (!sound.ready) sound.init(); }, { once: true });
+
+            state.questions = buildQuestions();
             state.totalQuestions = state.questions.length;
             state.currentIndex = 0;
             state.score = 0;
@@ -1336,17 +1219,19 @@
             updateStats();
             renderQuestion();
 
-            // Event listeners
-            ball.addEventListener('mousedown', onMouseDown);
-            ball.addEventListener('touchstart', onTouchStart, { passive: false });
+            baskets.forEach(b => {
+                b.addEventListener('click', onBasketClick);
+                // Untuk sentuhan di iOS
+                b.addEventListener('touchstart', (e) => {
+                    // Hanya prevent default jika tidak sedang animasi, biar tidak menggulir
+                    if (state.isAnimating || state.answered || state.gameOver) return;
+                    // Biarkan click yang menangani, tapi kita bisa memicu secara langsung
+                }, { passive: true });
+            });
 
             nextBtn.addEventListener('click', goToNext);
             restartBtn.addEventListener('click', restartGame);
 
-            // Prevent context menu on long press
-            ball.addEventListener('contextmenu', e => e.preventDefault());
-
-            // Keyboard shortcut: Space or Enter to advance
             document.addEventListener('keydown', (e) => {
                 if ((e.key === ' ' || e.key === 'Enter') && nextBtn.classList.contains('show')) {
                     e.preventDefault();
@@ -1357,16 +1242,14 @@
                 }
             });
 
-            console.log('🏀 入球游戏已启动!');
+            console.log(`🏀 Basket Vocab siap! ${state.totalQuestions} soal dari ${MASTER_VOCAB.length} kosakata.`);
         }
 
-        // Start when DOM ready
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', init);
         } else {
             init();
         }
     </script>
-
 </body>
 </html>
